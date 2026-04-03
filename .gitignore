@@ -1,0 +1,6 @@
+node_modules/
+build/
+.todo-mcp-data/
+.DS_Store
+*.log
+.env
