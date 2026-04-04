@@ -20,7 +20,7 @@ Add to `mcp_settings.json`:
 {
   "todo": {
     "command": "node",
-    "args": ["/Users/m.dusmikeev/Documents/Work/auto/md-todo-mcp/build/index.js"]
+    "args": ["/path/to/md-todo-mcp/build/index.js"]
   }
 }
 ```
@@ -40,33 +40,33 @@ Data is stored in local folder `.todo-mcp-data/tasks.json`
 
 ## Orchestrator Prompt Examples
 
-### Creating Todo List with Delegation
+### Creating Todo List for Code Review
 ```prompt
-Create a todo list for analyzing GitLab merge request comments:
-1. Search for GitLab project matching specified criteria
-2. Find target merge request with appropriate branch  
-3. Extract all comments from the MR
-4. Format comments as markdown list
+Create a todo list for reviewing code changes:
+1. Analyze the modified files and identify key changes
+2. Check for potential bugs or performance issues
+3. Verify coding standards and best practices
+4. Review test coverage for the changes
 
 Delegate each step to appropriate mode and require user approval before execution.
 ```
 
-### Task Execution with Logging
+### Task Execution with Progress Tracking
 ```prompt
-For todo task #1 "Search GitLab project":
-- Use MCP search to find relevant projects
-- Log results to task history
-- Return project info for user confirmation
-- If multiple matches found, ask user to choose correct one
+For todo task #1 "Analyze modified files":
+- Use appropriate tools to examine the code changes
+- Log findings to task history for user review
+- Present summary of changes for confirmation
+- If complex changes found, ask user for guidance on priority areas
 ```
 
-### Approval Workflow  
+### Approval Workflow for Completed Tasks
 ```prompt
-After completing todo task #3 "Extract MR comments":
-- Present extracted comments to user for review
-- Ask user: "Are these the correct comments from the merge request?"
+After completing todo task #3 "Verify coding standards":
+- Present the standards review results to user
+- Ask user: "Do these coding standards meet project requirements?"
 - If user confirms, mark task as approved
-- If user rejects, add feedback to task logs for revision
+- If user identifies issues, add feedback to task logs for revision
 ```
 
 ## Task Logging Structure
@@ -79,13 +79,13 @@ Each task includes comprehensive logs:
       "timestamp": "2024-01-15T10:30:00Z",
       "action": "TASK_CREATED",
       "mode": "orchestrator", 
-      "details": "Created task for GitLab MR analysis"
+      "details": "Created task for code review workflow"
     },
     {
       "timestamp": "2024-01-15T10:32:15Z", 
-      "action": "SEARCH_EXECUTED",
-      "mode": "the-buzzkill",
-      "details": "Found 3 GitLab projects matching PROTRD"
+      "action": "ANALYSIS_COMPLETED",
+      "mode": "technical-review",
+      "details": "Completed initial code analysis with 5 findings"
     }
   ]
 }
@@ -98,4 +98,16 @@ The Orchestrator should:
 2. Present todo list to user for editing/approval before execution  
 3. Clearly indicate delegation assignments for each todo item
 4. Use task logs to track progress and maintain execution history
-5. Require user confirmation at critical decision points
+5. Request user confirmation at key decision points
+6. Handle user feedback and incorporate it into task revisions
+
+## Natural Language Interaction Examples
+
+Instead of technical jargon, use simple language like:
+- "Посмотри какие комментарии есть к PR"
+- "Проверь изменения в текущей ветке"
+- "Создай список задач для код ревью"
+- "Покажи прогресс по текущим задачам"
+- "Подтверди выполнение этого шага"
+
+The system will automatically translate these into appropriate todo tasks with proper delegation.
