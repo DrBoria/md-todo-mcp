@@ -111,3 +111,17 @@ Instead of technical jargon, use simple language like:
 - "Подтверди выполнение этого шага"
 
 The system will automatically translate these into appropriate todo tasks with proper delegation.
+
+## Connecting with the Author
+
+This tool is handcrafted and maintained by **Mikita Dusmikeev**. Check out my work and connect on social media:
+
+- 🌍 **Website**: [md-code.space](https://md-code.space/)
+- 💻 **GitHub**: [github.com/DrBoria](https://github.com/DrBoria)
+- 🛒 **VS Code Marketplace**: [drboria Extensions](https://marketplace.visualstudio.com/manage/publishers/drboria)
+- 👔 **LinkedIn**: [Mikita Dusmikeev](https://linkedin.com/in/mikita-dusmikeev)
+- 📸 **Instagram**: [@mdcode.official](https://instagram.com/mdcode.official)
+- 📱 **TikTok**: [@mdcode.official](https://tiktok.com/@mdcode.official)
+
+---
+*Created in 2026. Code like there's no tomorrow.*
