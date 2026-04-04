@@ -19,7 +19,21 @@ export async function handleToolCall(request: any) {
     switch (name) {
       case 'create_todo': {
         const createParams = schemas.create_todo.parse(args) as CreateTodoParams;
-        return await createTodo(createParams);
+        
+        // For interactive apps, return elicitation response
+        return {
+          content: [{
+            type: 'text',
+            text: 'Opening todo creation interface'
+          }],
+          _meta: {
+            ui: {
+              resourceUri: `http://localhost:3001`,
+              description: 'Create a new todo task',
+              input: createParams
+            }
+          }
+        };
       }
       case 'get_todo_list': {
         const getParams = schemas.get_todo_list.parse(args) as GetTodoListParams;
@@ -27,7 +41,21 @@ export async function handleToolCall(request: any) {
       }
       case 'edit_todo': {
         const editParams = schemas.edit_todo.parse(args) as EditTodoParams;
-        return await editTodo(editParams);
+        
+        // For interactive editing
+        return {
+          content: [{
+            type: 'text',
+            text: 'Opening todo editing interface'
+          }],
+          _meta: {
+            ui: {
+              resourceUri: `http://localhost:3001?edit=${editParams.id}`,
+              description: 'Edit todo task',
+              input: editParams
+            }
+          }
+        };
       }
       case 'approve_todo': {
         const approveParams = schemas.approve_todo.parse(args) as ApproveTodoParams;
