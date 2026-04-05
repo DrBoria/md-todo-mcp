@@ -10,10 +10,15 @@ export interface TaskType {
   isAsync: boolean
 }
 
+export interface AgentType {
+  slug: string
+  name: string
+}
+
 interface Props {
   task: TaskType
   index: number
-  agents: string[]
+  agents: AgentType[]
   onUpdate: (task: TaskType) => void
   onRemove: () => void
 }
@@ -93,7 +98,7 @@ export const TodoItem: React.FC<Props> = ({ task, index, agents, onUpdate, onRem
         {/* Agent badge */}
         {task.assignedTo && (
           <span style={itemStyles.agentBadge}>
-            {task.assignedTo}
+            {agents.find(a => a.slug === task.assignedTo)?.name || task.assignedTo}
           </span>
         )}
 
@@ -107,7 +112,7 @@ export const TodoItem: React.FC<Props> = ({ task, index, agents, onUpdate, onRem
           >
             <option value="">Assign...</option>
             {agents.map(agent => (
-              <option key={agent} value={agent}>{agent}</option>
+              <option key={agent.slug} value={agent.slug}>{agent.name}</option>
             ))}
           </select>
           

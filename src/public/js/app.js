@@ -32,7 +32,7 @@ class TodoApp {
         
         this.agents.forEach(agent => {
             const option = document.createElement('option');
-            option.value = agent.id;
+            option.value = agent.slug;
             option.textContent = agent.name;
             select.appendChild(option);
         });

@@ -38,11 +38,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
                 description: { type: "string" },
                 assignedTo: { type: "string" },
                 isAsync: { type: "boolean" }
-              }
+              },
+              required: ["id", "title", "assignedTo"]
             },
-            description: "Initial tasks to populate the planning interface"
+            description: "Initial tasks to populate the planning interface. IMPORTANT: This MUST be a valid JSON Array of objects, NOT a string. Example: [{\"id\": \"t1\", \"title\": \"Task 1\", \"assignedTo\": \"coder\"}]"
           }
-        }
+        },
+        required: ["initialTasks"]
       }
     }
   ]

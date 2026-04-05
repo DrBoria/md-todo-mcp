@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core'
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { TodoItem, TaskType } from './components/TodoItem'
+import { TodoItem, TaskType, AgentType } from './components/TodoItem'
 
 const DEFAULT_TASKS: TaskType[] = [
   { id: '1', title: 'New task', description: '', assignedTo: '', isAsync: false }
@@ -9,7 +9,7 @@ const DEFAULT_TASKS: TaskType[] = [
 
 export const App: React.FC = () => {
   const [tasks, setTasks] = useState<TaskType[]>(DEFAULT_TASKS)
-  const [availableAgents, setAvailableAgents] = useState<string[]>([])
+  const [availableAgents, setAvailableAgents] = useState<AgentType[]>([])
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
@@ -23,11 +23,11 @@ export const App: React.FC = () => {
           const parsedInput = typeof rawInput === 'string' ? JSON.parse(rawInput) : rawInput
           if (parsedInput?.initialTasks && Array.isArray(parsedInput.initialTasks)) {
             const mapped = parsedInput.initialTasks.map((t: Record<string, string>, i: number) => ({
-              id: t.id || String(i + 1),
+              id: t.id || String(Date.now() + i),
               title: t.title || 'Untitled',
               description: t.description || '',
               assignedTo: t.assignedTo || '',
-              isAsync: false,
+              isAsync: t.isAsync === 'true' || (t as any).isAsync === true || false,
             }))
             if (mapped.length > 0) {
               setTasks(mapped)
@@ -38,6 +38,9 @@ export const App: React.FC = () => {
     }
     
     window.addEventListener('message', handler)
+    // Request context from parent once the listener is attached
+    window.parent.postMessage({ type: 'mcp-context-request' }, '*')
+    
     return () => window.removeEventListener('message', handler)
   }, [])
 
