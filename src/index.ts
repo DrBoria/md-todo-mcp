@@ -56,7 +56,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }],
       _meta: {
         ui: {
-          resourceUri: "http://localhost:3000",
+          resourceUri: "http://localhost:3001",
           description: "Task execution planning interface with drag-and-drop, agent assignment, and batch execution",
           input: request.params.arguments
         }
@@ -71,18 +71,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 const httpServer = createServer((req, res) => {
   try {
     if (req.url === '/') {
-      const html = readFileSync(join(__dirname, '../public/index.html'), 'utf8');
+      const html = readFileSync(join(__dirname, '../../ui/dist/index.html'), 'utf8');
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(html);
-    } else if (req.url === '/js/app.js') {
-      const js = readFileSync(join(__dirname, '../public/js/app.js'), 'utf8');
-      res.writeHead(200, { 'Content-Type': 'application/javascript' });
-      res.end(js);
+    } else if (req.url?.startsWith('/assets/')) {
+      // Serve static assets from dist folder
+      const filePath = join(__dirname, '../../ui/dist', req.url);
+      if (req.url.endsWith('.js')) {
+        const js = readFileSync(filePath, 'utf8');
+        res.writeHead(200, { 'Content-Type': 'application/javascript' });
+        res.end(js);
+      } else if (req.url.endsWith('.css')) {
+        const css = readFileSync(filePath, 'utf8');
+        res.writeHead(200, { 'Content-Type': 'text/css' });
+        res.end(css);
+      } else {
+        res.writeHead(404);
+        res.end('Not found');
+      }
+    } else if (req.url === '/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ 
+        status: 'ok', 
+        service: 'md-todo-mcp', 
+        timestamp: new Date().toISOString() 
+      }));
     } else {
       res.writeHead(404);
       res.end('Not found');
     }
   } catch (error) {
+    console.error('HTTP server error:', error);
     res.writeHead(500);
     res.end('Internal server error');
   }
