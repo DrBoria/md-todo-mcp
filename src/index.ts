@@ -11,6 +11,8 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+const HTTP_PORT = process.env.HTTP_PORT || "3001";
+
 // Create server
 const server = new Server(
   { name: "md-todo-mcp", version: "2.0.0" },
@@ -56,7 +58,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }],
       _meta: {
         ui: {
-          resourceUri: "http://localhost:3001",
+          resourceUri: `http://localhost:${HTTP_PORT}`,
           description: "Task execution planning interface with drag-and-drop, agent assignment, and batch execution",
           input: request.params.arguments
         }
@@ -67,42 +69,52 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   throw new Error("Tool not found");
 });
 
-// HTTP server for serving UI
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
 const httpServer = createServer((req, res) => {
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, CORS_HEADERS);
+    res.end();
+    return;
+  }
+
   try {
     if (req.url === '/') {
-      const html = readFileSync(join(__dirname, '../../ui/dist/index.html'), 'utf8');
-      res.writeHead(200, { 'Content-Type': 'text/html' });
+      const html = readFileSync(join(__dirname, '../ui/dist/index.html'), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'text/html', ...CORS_HEADERS });
       res.end(html);
     } else if (req.url?.startsWith('/assets/')) {
-      // Serve static assets from dist folder
-      const filePath = join(__dirname, '../../ui/dist', req.url);
+      const filePath = join(__dirname, '../ui/dist', req.url);
       if (req.url.endsWith('.js')) {
         const js = readFileSync(filePath, 'utf8');
-        res.writeHead(200, { 'Content-Type': 'application/javascript' });
+        res.writeHead(200, { 'Content-Type': 'application/javascript', ...CORS_HEADERS });
         res.end(js);
       } else if (req.url.endsWith('.css')) {
         const css = readFileSync(filePath, 'utf8');
-        res.writeHead(200, { 'Content-Type': 'text/css' });
+        res.writeHead(200, { 'Content-Type': 'text/css', ...CORS_HEADERS });
         res.end(css);
       } else {
-        res.writeHead(404);
+        res.writeHead(404, CORS_HEADERS);
         res.end('Not found');
       }
     } else if (req.url === '/health') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.writeHead(200, { 'Content-Type': 'application/json', ...CORS_HEADERS });
       res.end(JSON.stringify({ 
         status: 'ok', 
         service: 'md-todo-mcp', 
         timestamp: new Date().toISOString() 
       }));
     } else {
-      res.writeHead(404);
+      res.writeHead(404, CORS_HEADERS);
       res.end('Not found');
     }
   } catch (error) {
     console.error('HTTP server error:', error);
-    res.writeHead(500);
+    res.writeHead(500, CORS_HEADERS);
     res.end('Internal server error');
   }
 });
@@ -110,10 +122,9 @@ const httpServer = createServer((req, res) => {
 // Start servers
 async function main() {
   // Start HTTP server
-  const httpPort = process.env.HTTP_PORT || 3001;
-  httpServer.listen(httpPort, () => {
-    console.error(`Todo MCP UI server started on port ${httpPort}`);
-    console.error(`UI available at: http://localhost:${httpPort}`);
+  httpServer.listen(HTTP_PORT, () => {
+    console.error(`Todo MCP UI server started on port ${HTTP_PORT}`);
+    console.error(`UI available at: http://localhost:${HTTP_PORT}`);
   });
 
   // Start MCP server
