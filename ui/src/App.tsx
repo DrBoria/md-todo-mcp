@@ -10,6 +10,7 @@ const DEFAULT_TASKS: TaskType[] = [
 export const App: React.FC = () => {
   const [tasks, setTasks] = useState<TaskType[]>(DEFAULT_TASKS)
   const [availableAgents, setAvailableAgents] = useState<AgentType[]>([])
+  const [isReadOnly, setIsReadOnly] = useState(false)
 
   useEffect(() => {
     const handler = (event: MessageEvent) => {
@@ -17,6 +18,11 @@ export const App: React.FC = () => {
         const rawAgents = event.data.data?.agents || []
         const parsedAgents = typeof rawAgents === 'string' ? JSON.parse(rawAgents) : rawAgents
         setAvailableAgents(Array.isArray(parsedAgents) ? parsedAgents : [])
+
+        // Check if the iframe is in read-only mode (e.g., showing approved plan)
+        if (event.data.data?.readOnly === true) {
+          setIsReadOnly(true)
+        }
 
         const rawInput = event.data.data?.input
         if (rawInput) {
@@ -95,11 +101,13 @@ export const App: React.FC = () => {
           </svg>
           <span style={styles.headerTitle}>Task Execution Plan</span>
         </div>
-        <button onClick={addTask} style={styles.addButton} title="Add task">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M14 7v1H8v6H7V8H1V7h6V1h1v6h6z"/>
-          </svg>
-        </button>
+        {!isReadOnly && (
+          <button onClick={addTask} style={styles.addButton} title="Add task">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M14 7v1H8v6H7V8H1V7h6V1h1v6h6z"/>
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* TASK COUNT */}
@@ -117,6 +125,7 @@ export const App: React.FC = () => {
                 task={task}
                 index={index}
                 agents={availableAgents}
+                readOnly={isReadOnly}
                 onUpdate={(updated) => setTasks(ts => ts.map(t => t.id === updated.id ? updated : t))}
                 onRemove={() => removeTask(task.id)}
               />
@@ -125,18 +134,20 @@ export const App: React.FC = () => {
         </SortableContext>
       </DndContext>
 
-      {/* ACTION BUTTONS */}
-      <div style={styles.actions}>
-        <button onClick={handleApprove} style={styles.approveButton}>
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M6.27 10.87h.71l4.56-4.56-.71-.71-4.2 4.21-1.92-1.92L4 8.6l2.27 2.27z"/>
-          </svg>
-          Approve & Execute
-        </button>
-        <button onClick={handleCancel} style={styles.cancelButton}>
-          Cancel
-        </button>
-      </div>
+      {/* ACTION BUTTONS - hidden in read-only mode */}
+      {!isReadOnly && (
+        <div style={styles.actions}>
+          <button onClick={handleApprove} style={styles.approveButton}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M6.27 10.87h.71l4.56-4.56-.71-.71-4.2 4.21-1.92-1.92L4 8.6l2.27 2.27z"/>
+            </svg>
+            Approve & Execute
+          </button>
+          <button onClick={handleCancel} style={styles.cancelButton}>
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   )
 }

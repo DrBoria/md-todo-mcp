@@ -19,16 +19,20 @@ interface Props {
   task: TaskType
   index: number
   agents: AgentType[]
+  readOnly?: boolean
   onUpdate: (task: TaskType) => void
   onRemove: () => void
 }
 
-export const TodoItem: React.FC<Props> = ({ task, index, agents, onUpdate, onRemove }) => {
+export const TodoItem: React.FC<Props> = ({ task, index, agents, readOnly, onUpdate, onRemove }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id })
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ 
+    id: task.id,
+    disabled: readOnly,
+  })
   
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -48,17 +52,19 @@ export const TodoItem: React.FC<Props> = ({ task, index, agents, onUpdate, onRem
     >
       {/* MAIN ROW */}
       <div style={itemStyles.row}>
-        {/* Drag handle + expand/collapse */}
-        <div
-          {...attributes}
-          {...listeners}
-          style={itemStyles.dragHandle}
-          title="Drag to reorder"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style={{ opacity: 0.4 }}>
-            <path d="M5 3h2v2H5V3zm4 0h2v2H9V3zM5 7h2v2H5V7zm4 0h2v2H9V7zm-4 4h2v2H5v-2zm4 0h2v2H9v-2z"/>
-          </svg>
-        </div>
+        {/* Drag handle - hidden in read-only mode */}
+        {!readOnly && (
+          <div
+            {...attributes}
+            {...listeners}
+            style={itemStyles.dragHandle}
+            title="Drag to reorder"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style={{ opacity: 0.4 }}>
+              <path d="M5 3h2v2H5V3zm4 0h2v2H9V3zM5 7h2v2H5V7zm4 0h2v2H9V7zm-4 4h2v2H5v-2zm4 0h2v2H9v-2z"/>
+            </svg>
+          </div>
+        )}
 
         <button onClick={() => setIsExpanded(!isExpanded)} style={itemStyles.expandButton}>
           <svg 
@@ -76,8 +82,8 @@ export const TodoItem: React.FC<Props> = ({ task, index, agents, onUpdate, onRem
         {/* Index badge */}
         <span style={itemStyles.indexBadge}>{index + 1}</span>
 
-        {/* Title */}
-        {isEditing ? (
+        {/* Title - not editable in read-only mode */}
+        {!readOnly && isEditing ? (
           <input
             value={task.title}
             onChange={e => onUpdate({...task, title: e.target.value })}
@@ -89,7 +95,7 @@ export const TodoItem: React.FC<Props> = ({ task, index, agents, onUpdate, onRem
         ) : (
           <div 
             style={itemStyles.title}
-            onClick={() => setIsEditing(true)}
+            onClick={() => !readOnly && setIsEditing(true)}
           >
             {task.title}
           </div>
@@ -102,37 +108,45 @@ export const TodoItem: React.FC<Props> = ({ task, index, agents, onUpdate, onRem
           </span>
         )}
 
-        {/* Actions (visible on hover) */}
-        <div style={{ ...itemStyles.actions, opacity: isHovered ? 1 : 0 }}>
-          <select
-            value={task.assignedTo}
-            onChange={e => onUpdate({...task, assignedTo: e.target.value })}
-            style={itemStyles.select}
-            title="Assign agent"
-          >
-            <option value="">Assign...</option>
-            {agents.map(agent => (
-              <option key={agent.slug} value={agent.slug}>{agent.name}</option>
-            ))}
-          </select>
-          
-          <button onClick={onRemove} style={itemStyles.removeButton} title="Remove task">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M8 8.707l3.646 3.647.708-.707L8.707 8l3.647-3.646-.707-.708L8 7.293 4.354 3.646l-.707.708L7.293 8l-3.646 3.646.707.708L8 8.707z"/>
-            </svg>
-          </button>
-        </div>
+        {/* Actions (visible on hover) - hidden in read-only mode */}
+        {!readOnly && (
+          <div style={{ ...itemStyles.actions, opacity: isHovered ? 1 : 0 }}>
+            <select
+              value={task.assignedTo}
+              onChange={e => onUpdate({...task, assignedTo: e.target.value })}
+              style={itemStyles.select}
+              title="Assign agent"
+            >
+              <option value="">Assign...</option>
+              {agents.map(agent => (
+                <option key={agent.slug} value={agent.slug}>{agent.name}</option>
+              ))}
+            </select>
+            
+            <button onClick={onRemove} style={itemStyles.removeButton} title="Remove task">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 8.707l3.646 3.647.708-.707L8.707 8l3.647-3.646-.707-.708L8 7.293 4.354 3.646l-.707.708L7.293 8l-3.646 3.646.707.708L8 8.707z"/>
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* EXPANDED DETAILS */}
+      {/* EXPANDED DETAILS - not editable in read-only mode */}
       {isExpanded && (
         <div style={itemStyles.details}>
-          <textarea
-            value={task.description}
-            onChange={e => onUpdate({...task, description: e.target.value })}
-            placeholder="Add description or instructions for this task..."
-            style={itemStyles.descriptionInput}
-          />
+          {readOnly ? (
+            <div style={itemStyles.descriptionReadOnly}>
+              {task.description || 'No description'}
+            </div>
+          ) : (
+            <textarea
+              value={task.description}
+              onChange={e => onUpdate({...task, description: e.target.value })}
+              placeholder="Add description or instructions for this task..."
+              style={itemStyles.descriptionInput}
+            />
+          )}
           <div style={itemStyles.detailRow}>
             <label style={itemStyles.checkboxLabel}>
               <input
@@ -140,6 +154,7 @@ export const TodoItem: React.FC<Props> = ({ task, index, agents, onUpdate, onRem
                 checked={task.isAsync}
                 onChange={e => onUpdate({...task, isAsync: e.target.checked })}
                 style={itemStyles.checkbox}
+                disabled={readOnly}
               />
               Run in parallel
             </label>
@@ -262,6 +277,15 @@ const itemStyles: Record<string, React.CSSProperties> = {
     resize: 'vertical' as const,
     outline: 'none',
     boxSizing: 'border-box' as const,
+  },
+  descriptionReadOnly: {
+    width: '100%',
+    color: '#cccccc',
+    padding: '6px 8px',
+    fontSize: '12px',
+    fontFamily: 'inherit',
+    whiteSpace: 'pre-wrap' as const,
+    lineHeight: '1.4',
   },
   detailRow: {
     marginTop: '6px',
