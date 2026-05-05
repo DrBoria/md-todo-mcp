@@ -23,6 +23,149 @@ class TodoApp {
         if (event.data.type === 'mcp-context') {
             this.agents = event.data.data?.agents || [];
             this.populateAgentDropdown();
+            return;
+        }
+
+        // ── Handle DOM query (from DevtoolProvider find_element) ──────────
+        if (event.data.type === 'dom-query') {
+            const req = event.data;
+            if (req.command === 'serialize') {
+                // Return the full innerHTML for the parent to parse and serialize
+                const html = document.body ? document.body.innerHTML : '';
+                event.source.postMessage({
+                    type: 'dom-response',
+                    requestId: req.requestId,
+                    result: { html }
+                }, '*');
+            }
+            return;
+        }
+
+        // ── Handle DOM action (from DevtoolProvider click/type/drag/scroll) ──
+        if (event.data.type === 'dom-action') {
+            const req = event.data;
+            const el = req.selector ? document.querySelector(req.selector) : null;
+            if (!el) {
+                event.source.postMessage({
+                    type: 'dom-response',
+                    requestId: req.requestId,
+                    error: `Element not found: ${req.selector}`
+                }, '*');
+                return;
+            }
+
+            switch (req.command) {
+                case 'click': {
+                    if (typeof el.click === 'function') {
+                        el.click();
+                    } else {
+                        // Dispatch pointer events for complex components
+                        const rect = el.getBoundingClientRect();
+                        const cx = rect.left + rect.width / 2;
+                        const cy = rect.top + rect.height / 2;
+                        const opts = { bubbles: true, cancelable: true, clientX: cx, clientY: cy };
+                        el.dispatchEvent(new PointerEvent('pointerdown', opts));
+                        el.dispatchEvent(new PointerEvent('pointerup', opts));
+                        el.dispatchEvent(new MouseEvent('mousedown', opts));
+                        el.dispatchEvent(new MouseEvent('mouseup', opts));
+                        el.dispatchEvent(new MouseEvent('click', opts));
+                    }
+                    event.source.postMessage({
+                        type: 'dom-response',
+                        requestId: req.requestId,
+                        result: { success: true, message: `Clicked ${req.selector}` }
+                    }, '*');
+                    break;
+                }
+                case 'type': {
+                    const text = req.text || '';
+                    const submit = req.submit === true;
+
+                    if (typeof el.focus === 'function') el.focus();
+
+                    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+                        const proto = Object.getPrototypeOf(el);
+                        const nativeSetter = Object.getOwnPropertyDescriptor(proto.constructor.prototype, 'value')?.set;
+                        if (nativeSetter) {
+                            nativeSetter.call(el, text);
+                        } else {
+                            el.value = text;
+                        }
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                    } else if (el.getAttribute('contenteditable') === 'true') {
+                        const selection = window.getSelection();
+                        if (selection) {
+                            const range = document.createRange();
+                            range.selectNodeContents(el);
+                            range.collapse(false);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                        }
+                        document.execCommand('insertText', false, text);
+                    } else {
+                        el.textContent = text;
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+
+                    if (submit) {
+                        const enterOpts = { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true };
+                        el.dispatchEvent(new KeyboardEvent('keydown', enterOpts));
+                        el.dispatchEvent(new KeyboardEvent('keypress', enterOpts));
+                        el.dispatchEvent(new KeyboardEvent('keyup', enterOpts));
+                    }
+
+                    event.source.postMessage({
+                        type: 'dom-response',
+                        requestId: req.requestId,
+                        result: { success: true, message: `Typed into ${req.selector}` }
+                    }, '*');
+                    break;
+                }
+                case 'scroll': {
+                    const scrollAmount = 300;
+                    const dir = req.direction || 'down';
+                    switch (dir) {
+                        case 'up': el.scrollBy({ top: -scrollAmount, behavior: 'smooth' }); break;
+                        case 'down': el.scrollBy({ top: scrollAmount, behavior: 'smooth' }); break;
+                        case 'left': el.scrollBy({ left: -scrollAmount, behavior: 'smooth' }); break;
+                        case 'right': el.scrollBy({ left: scrollAmount, behavior: 'smooth' }); break;
+                    }
+                    event.source.postMessage({
+                        type: 'dom-response',
+                        requestId: req.requestId,
+                        result: { success: true, message: `Scrolled ${dir}` }
+                    }, '*');
+                    break;
+                }
+                case 'drag': {
+                    const pixels = req.pixels || 50;
+                    const dx = req.direction === 'l' ? -pixels : req.direction === 'r' ? pixels : 0;
+                    const dy = req.direction === 't' ? -pixels : req.direction === 'b' ? pixels : 0;
+                    const rect = el.getBoundingClientRect();
+                    const startX = rect.left + rect.width / 2;
+                    const startY = rect.top + rect.height / 2;
+                    const dispatchMouse = (type, x, y) => {
+                        el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+                    };
+                    dispatchMouse('mousedown', startX, startY);
+                    dispatchMouse('mousemove', startX + dx, startY + dy);
+                    dispatchMouse('mouseup', startX + dx, startY + dy);
+                    event.source.postMessage({
+                        type: 'dom-response',
+                        requestId: req.requestId,
+                        result: { success: true, message: `Dragged ${req.direction} ${pixels}px` }
+                    }, '*');
+                    break;
+                }
+                default:
+                    event.source.postMessage({
+                        type: 'dom-response',
+                        requestId: req.requestId,
+                        error: `Unknown command: ${req.command}`
+                    }, '*');
+            }
+            return;
         }
     }
 

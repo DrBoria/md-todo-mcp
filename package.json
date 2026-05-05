@@ -7,7 +7,7 @@
     "md-todo-mcp": "./build/index.js"
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm --clean --out-dir build",
+    "build": "tsup src/index.ts --format esm --clean --out-dir build && cd ui && pnpm build",
     "start": "node build/index.js",
     "dev": "tsx src/index.ts",
     "install-global": "npm install -g ."

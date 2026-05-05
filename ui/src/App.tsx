@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core'
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { TodoItem, TaskType, AgentType } from './components/TodoItem'
+import { createDomConsumer } from '@jabberwock/devtool/dom/consumer'
 
 const DEFAULT_TASKS: TaskType[] = [
   { id: '1', title: 'New task', description: '', assignedTo: '', isAsync: false }
@@ -40,15 +41,19 @@ export const App: React.FC = () => {
             }
           }
         }
+        return
       }
     }
-    
+
     window.addEventListener('message', handler)
     // Request context from parent once the listener is attached
-    window.parent.postMessage({ type: 'mcp-context-request' }, '*')
-    
+    window.parent.postMessage({ type: 'mcp-context-request' }, { targetOrigin: '*' })
+
     return () => window.removeEventListener('message', handler)
   }, [])
+
+  // ── DOM Consumer: handles dom-query / dom-action from parent webview ──
+  useEffect(() => createDomConsumer(), [])
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -66,14 +71,14 @@ export const App: React.FC = () => {
       type: 'mcp-action',
       action: 'accept',
       content: { tasks }
-    }, '*')
+    }, { targetOrigin: '*' })
   }
 
   const handleCancel = () => {
     window.parent.postMessage({
       type: 'mcp-action',
       action: 'cancel'
-    }, '*')
+    }, { targetOrigin: '*' })
   }
 
   const addTask = () => {
@@ -102,7 +107,7 @@ export const App: React.FC = () => {
           <span style={styles.headerTitle}>Task Execution Plan</span>
         </div>
         {!isReadOnly && (
-          <button onClick={addTask} style={styles.addButton} title="Add task">
+          <button onClick={addTask} style={styles.addButton} title="Add task" role="add-task">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
               <path d="M14 7v1H8v6H7V8H1V7h6V1h1v6h6z"/>
             </svg>
@@ -137,13 +142,13 @@ export const App: React.FC = () => {
       {/* ACTION BUTTONS - hidden in read-only mode */}
       {!isReadOnly && (
         <div style={styles.actions}>
-          <button onClick={handleApprove} style={styles.approveButton}>
+          <button onClick={handleApprove} style={styles.approveButton} role="approve">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
               <path d="M6.27 10.87h.71l4.56-4.56-.71-.71-4.2 4.21-1.92-1.92L4 8.6l2.27 2.27z"/>
             </svg>
             Approve & Execute
           </button>
-          <button onClick={handleCancel} style={styles.cancelButton}>
+          <button onClick={handleCancel} style={styles.cancelButton} role="cancel">
             Cancel
           </button>
         </div>
